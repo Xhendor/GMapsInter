@@ -1,6 +1,7 @@
 package com.uabc.edu.gmaps;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -9,6 +10,9 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -19,10 +23,53 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity
+        implements OnMapReadyCallback {
 
     public static final int ACEPTAR_PERMISOS = 120;
+
+    private LocationManager locManager;
+    private LocationListener locListener;
+
     private GoogleMap mMap;
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void comenzarLocalizacion() {
+
+        locManager = (LocationManager)
+                getSystemService(Context.LOCATION_SERVICE);
+
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(
+                        Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+            Location loc = locManager.getLastKnownLocation(
+                    LocationManager.GPS_PROVIDER);
+        }
+
+
+        locListener = new LocationListener() {
+            public void onLocationChanged(Location location) {
+                LatLng latLong=new LatLng(location.getLatitude(),
+                        location.getLongitude());
+                mMap.addMarker(new MarkerOptions().
+                        position(latLong).title("Mi Posición"));
+            }
+            public void onProviderDisabled(String provider){
+                System.err.println("Provider OFF");
+            }
+            public void onProviderEnabled(String provider){
+                System.err.println("Provider ON ");
+            }
+            public void onStatusChanged(String provider, int status, Bundle extras){
+                System.err.println("Provider Status: " + status);
+            }
+        };
+
+        locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                3000,1,locListener);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
